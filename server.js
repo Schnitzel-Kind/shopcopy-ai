@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
@@ -11,7 +12,7 @@ app.post("/generate", async (req, res) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,UiwadC1rFK0eUtZcC9cRJeoNU52ryw-2XdnDWTQxV98RemCePMo9u7KL6APtMkJpUk-D99I5igWrDrrx368cRw-jyK2CAAA",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify(req.body),
