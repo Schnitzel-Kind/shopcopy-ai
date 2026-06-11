@@ -53,7 +53,7 @@ export default function App() {
   const [activeSection, setActiveSection] = useState("product");
 
   const callAPI = async (tool) => {
-    const response = await fetch("http://localhost:3001/generate", {
+    const response = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -94,7 +94,6 @@ export default function App() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#f0f0f0", fontFamily: "'Inter', system-ui, sans-serif", display: "flex", flexDirection: "column", alignItems: "center", padding: "48px 16px" }}>
-
       <div style={{ textAlign: "center", marginBottom: "40px", maxWidth: 580 }}>
         <div style={{ display: "inline-block", background: gold, borderRadius: 8, padding: "6px 14px", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#0a0a0a", marginBottom: 20 }}>
           Free — {remaining} generation{remaining !== 1 ? "s" : ""} left
