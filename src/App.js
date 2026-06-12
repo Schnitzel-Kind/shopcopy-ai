@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import Legal from "./Legal";
 
 const FREE_LIMIT = 3;
 
@@ -145,6 +146,7 @@ export default function App() {
   const [error, setError] = useState("");
   const [usageCount, setUsageCount] = useState(getStoredUsage);
   const [activeSection, setActiveSection] = useState("product");
+  const [legalPage, setLegalPage] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleImageUpload = async (e) => {
@@ -222,6 +224,10 @@ export default function App() {
     padding: "12px 14px", color: C.text, fontSize: 15, outline: "none", boxSizing: "border-box",
     fontFamily: "inherit", transition: "border-color 0.15s, box-shadow 0.15s",
   };
+
+  if (legalPage) {
+    return <Legal page={legalPage} onBack={() => setLegalPage(null)} />;
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif" }}>
@@ -432,6 +438,10 @@ export default function App() {
 
         {/* Footer */}
         <footer style={{ textAlign: "center", marginTop: 64, color: C.textMuted, fontSize: 13 }}>
+          <div style={{ display: "flex", gap: 18, justifyContent: "center", marginBottom: 12, flexWrap: "wrap" }}>
+            <button onClick={() => setLegalPage("imprint")} style={{ background: "none", border: "none", color: C.textSoft, fontSize: 13, cursor: "pointer", fontWeight: 500, padding: 0 }}>Imprint</button>
+            <button onClick={() => setLegalPage("privacy")} style={{ background: "none", border: "none", color: C.textSoft, fontSize: 13, cursor: "pointer", fontWeight: 500, padding: 0 }}>Privacy Policy</button>
+          </div>
           <p style={{ margin: 0 }}>© 2026 ShopCopy · Not affiliated with Shopify Inc.</p>
         </footer>
       </main>
