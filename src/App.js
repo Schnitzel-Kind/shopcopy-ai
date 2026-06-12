@@ -1,19 +1,19 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 const FREE_LIMIT = 3;
 
 const PROMPTS = {
-  product: `You are an expert Shopify SEO copywriter. Respond ONLY with a valid JSON object, no markdown, no backticks:
+  product: `You are an expert Shopify SEO copywriter. If a product image is provided, use visual details (colors, materials, style) in your copy. Respond ONLY with a valid JSON object, no markdown, no backticks:
 {"metaTitle":"...","metaDescription":"...","productDescription":"...","blogPost":"..."}
 Rules:
 - metaTitle: max 60 chars
 - metaDescription: max 155 chars, include CTA
 - productDescription: 3-4 sentences, benefit-focused
 - blogPost: 200-250 words, SEO-friendly, include **Headings**`,
-  faq: `You are a Shopify product expert. Respond ONLY with a valid JSON object, no markdown, no backticks:
+  faq: `You are a Shopify product expert. If a product image is provided, use visual details to make FAQs more specific. Respond ONLY with a valid JSON object, no markdown, no backticks:
 {"faqs":[{"question":"...","answer":"..."},{"question":"...","answer":"..."},{"question":"...","answer":"..."},{"question":"...","answer":"..."},{"question":"...","answer":"..."}]}
 Generate 5 realistic customer FAQs with helpful answers.`,
-  adcopy: `You are an expert paid social media copywriter. Respond ONLY with a valid JSON object, no markdown, no backticks:
+  adcopy: `You are an expert paid social media copywriter. If a product image is provided, reference its visual appeal. Respond ONLY with a valid JSON object, no markdown, no backticks:
 {"facebook":"...","instagram":"...","tiktok":"..."}
 Rules:
 - facebook: 2-3 sentences, hook + benefit + CTA, max 200 chars
@@ -37,6 +37,43 @@ const C = {
   redSoft: "#fef2f2",
   redBorder: "#fecaca",
 };
+
+function getStoredUsage() {
+  try {
+    const v = parseInt(localStorage.getItem("sc_usage") || "0", 10);
+    return isNaN(v) ? 0 : v;
+  } catch { return 0; }
+}
+
+function storeUsage(count) {
+  try { localStorage.setItem("sc_usage", String(count)); } catch {}
+}
+
+// Resize image client-side to keep API costs low
+function resizeImage(file, maxSize = 800) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e) => { img.src = e.target.result; };
+    reader.onerror = reject;
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxSize || height > maxSize) {
+        const scale = maxSize / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+      resolve(dataUrl.split(",")[1]);
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 function Logo({ size = 30 }) {
   return (
@@ -101,13 +138,44 @@ const FEATURES = [
 export default function App() {
   const [productName, setProductName] = useState("");
   const [productDetails, setProductDetails] = useState("");
+  const [imageData, setImageData] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [usageCount, setUsageCount] = useState(0);
+  const [usageCount, setUsageCount] = useState(getStoredUsage);
   const [activeSection, setActiveSection] = useState("product");
+  const fileInputRef = useRef(null);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setError("Please upload an image file."); return; }
+    if (file.size > 10 * 1024 * 1024) { setError("Image must be under 10 MB."); return; }
+    setError("");
+    try {
+      const base64 = await resizeImage(file);
+      setImageData(base64);
+      setImagePreview(`data:image/jpeg;base64,${base64}`);
+    } catch {
+      setError("Couldn't read that image. Try another one.");
+    }
+  };
+
+  const removeImage = () => {
+    setImageData(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const callAPI = async (tool) => {
+    const userContent = imageData
+      ? [
+          { type: "image", source: { type: "base64", media_type: "image/jpeg", data: imageData } },
+          { type: "text", text: `Product Name: ${productName}\nDetails: ${productDetails || "See image for details."}` },
+        ]
+      : `Product Name: ${productName}\nDetails: ${productDetails || "No additional details provided."}`;
+
     const response = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -115,7 +183,7 @@ export default function App() {
         model: "claude-sonnet-4-5-20250929",
         max_tokens: 1000,
         system: PROMPTS[tool],
-        messages: [{ role: "user", content: `Product Name: ${productName}\nDetails: ${productDetails || "No additional details provided."}` }],
+        messages: [{ role: "user", content: userContent }],
       }),
     });
     const data = await response.json();
@@ -131,7 +199,9 @@ export default function App() {
     try {
       const [product, faq, adcopy] = await Promise.all([callAPI("product"), callAPI("faq"), callAPI("adcopy")]);
       setResults({ product, faq, adcopy });
-      setUsageCount((c) => c + 1);
+      const next = usageCount + 1;
+      setUsageCount(next);
+      storeUsage(next);
       setActiveSection("product");
     } catch (e) {
       setError("Something went wrong. Please try again.");
@@ -157,17 +227,17 @@ export default function App() {
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif" }}>
 
       {/* Nav */}
-      <nav style={{ background: "#fff", borderBottom: `1px solid ${C.border}`, padding: "0 24px" }}>
-        <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 68 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+      <nav style={{ background: "#fff", borderBottom: `1px solid ${C.border}`, padding: "0 20px" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 68, gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 11, flexShrink: 0 }}>
             <Logo />
             <span style={{ fontWeight: 800, fontSize: 21, letterSpacing: "-0.02em" }}>ShopCopy</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <span style={{ fontSize: 13, color: C.textMuted, fontWeight: 500 }}>
-              {remaining} free generation{remaining !== 1 ? "s" : ""} left
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginLeft: "auto" }}>
+            <span className="nav-counter" style={{ fontSize: 13, color: C.textMuted, fontWeight: 500, whiteSpace: "nowrap" }}>
+              {remaining} free left
             </span>
-            <button style={{ padding: "9px 20px", background: C.text, color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+            <button style={{ padding: "9px 20px", background: C.text, color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
               Upgrade
             </button>
           </div>
@@ -203,7 +273,7 @@ export default function App() {
               onFocus={(e) => { e.target.style.borderColor = C.borderFocus; e.target.style.boxShadow = `0 0 0 3px ${C.greenSoft}`; }}
               onBlur={(e) => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }} />
           </div>
-          <div style={{ marginBottom: 22 }}>
+          <div style={{ marginBottom: 18 }}>
             <label style={{ display: "block", fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 7 }}>
               Product details <span style={{ color: C.textMuted, fontWeight: 400 }}>(optional)</span>
             </label>
@@ -213,6 +283,37 @@ export default function App() {
               style={{ ...inputStyle, resize: "vertical", lineHeight: 1.6 }}
               onFocus={(e) => { e.target.style.borderColor = C.borderFocus; e.target.style.boxShadow = `0 0 0 3px ${C.greenSoft}`; }}
               onBlur={(e) => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }} />
+          </div>
+
+          {/* Image Upload */}
+          <div style={{ marginBottom: 22 }}>
+            <label style={{ display: "block", fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 7 }}>
+              Product photo <span style={{ color: C.textMuted, fontWeight: 400 }}>(optional — improves accuracy)</span>
+            </label>
+            {!imagePreview ? (
+              <button onClick={() => fileInputRef.current?.click()}
+                style={{ width: "100%", padding: "20px", background: "#fafaf9", border: `1.5px dashed ${C.border}`, borderRadius: 10, color: C.textSoft, fontSize: 14, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 9, transition: "border-color 0.15s" }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = C.green}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = C.border}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
+                </svg>
+                Upload a product photo
+              </button>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 14, padding: 12, background: "#fafaf9", border: `1px solid ${C.border}`, borderRadius: 10 }}>
+                <img src={imagePreview} alt="Product" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}` }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: C.text }}>Photo attached</p>
+                  <p style={{ margin: "2px 0 0", fontSize: 13, color: C.textMuted }}>AI will use visual details in your copy</p>
+                </div>
+                <button onClick={removeImage}
+                  style={{ padding: "7px 14px", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, color: C.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                  Remove
+                </button>
+              </div>
+            )}
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} style={{ display: "none" }} />
           </div>
 
           {error && <div style={{ background: C.redSoft, border: `1px solid ${C.redBorder}`, borderRadius: 10, padding: "11px 14px", color: C.red, fontSize: 14, marginBottom: 16, fontWeight: 500 }}>{error}</div>}
