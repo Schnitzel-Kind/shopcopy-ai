@@ -14,10 +14,11 @@ Rules:
 {"faqs":[{"question":"...","answer":"..."},{"question":"...","answer":"..."},{"question":"...","answer":"..."},{"question":"...","answer":"..."},{"question":"...","answer":"..."}]}
 Generate 5 realistic customer FAQs with helpful answers.`,
   adcopy: `You are an expert paid social media copywriter. Respond ONLY with a valid JSON object, no markdown, no backticks:
-{"facebook":"...","instagram":"..."}
+{"facebook":"...","instagram":"...","tiktok":"..."}
 Rules:
 - facebook: 2-3 sentences, hook + benefit + CTA, max 200 chars
-- instagram: punchy, emoji-friendly, max 150 chars, strong CTA`,
+- instagram: punchy, emoji-friendly, max 150 chars, strong CTA
+- tiktok: casual Gen-Z tone, scroll-stopping hook first, conversational, max 150 chars, feels native not like an ad`,
 };
 
 const C = {
@@ -88,7 +89,7 @@ const FEATURES = [
   },
   {
     title: "Ready-to-run Ads",
-    desc: "Facebook and Instagram ad copy with hooks and CTAs — paste straight into your ad manager.",
+    desc: "Facebook, Instagram and TikTok ad copy with hooks and CTAs — paste straight into your ad manager.",
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 11l18-5v12L3 14v-3z" /><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
@@ -281,7 +282,7 @@ export default function App() {
 
               {activeSection === "adcopy" && (
                 <div>
-                  {[{ key: "facebook", label: "Facebook Ad" }, { key: "instagram", label: "Instagram Ad" }].map((ad, i, arr) => (
+                  {[{ key: "facebook", label: "Facebook Ad" }, { key: "instagram", label: "Instagram Ad" }, { key: "tiktok", label: "TikTok Ad" }].map((ad, i, arr) => (
                     <div key={ad.key} style={{ marginBottom: 26, paddingBottom: 26, borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: C.text, textTransform: "uppercase", letterSpacing: "0.05em" }}>{ad.label}</span>
                       <p style={{ color: C.textSoft, fontSize: 15, lineHeight: 1.7, margin: "10px 0 14px", whiteSpace: "pre-wrap" }}>{results.adcopy[ad.key]}</p>
