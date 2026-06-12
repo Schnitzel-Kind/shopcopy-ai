@@ -20,7 +20,6 @@ Rules:
 - instagram: punchy, emoji-friendly, max 150 chars, strong CTA`,
 };
 
-// Design tokens — trust-building SaaS palette
 const C = {
   bg: "#fafaf9",
   card: "#ffffff",
@@ -38,12 +37,12 @@ const C = {
   redBorder: "#fecaca",
 };
 
-function Logo({ size = 28 }) {
+function Logo({ size = 30 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <rect x="2" y="6" width="28" height="22" rx="5" fill="#16a34a" />
-      <path d="M10 6V5a6 6 0 0 1 12 0v1" stroke="#16a34a" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-      <path d="M11.5 17.5l3 3 6-6.5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width={size} height={size} viewBox="0 0 36 36" fill="none">
+      <path d="M12 12V9a6 6 0 0 1 12 0v3" stroke="#16a34a" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      <rect x="5" y="11" width="26" height="21" rx="5" fill="#16a34a" />
+      <path d="M13.5 21.5l3.5 3.5 6.5-7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -67,6 +66,36 @@ function CopyButton({ text }) {
     </button>
   );
 }
+
+const FEATURES = [
+  {
+    title: "SEO Product Copy",
+    desc: "Meta titles, descriptions and full blog posts — tuned to rank on Google and convert visitors into buyers.",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+      </svg>
+    ),
+  },
+  {
+    title: "Customer FAQs",
+    desc: "Five realistic questions your buyers actually ask — answered before they hit your support inbox.",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    ),
+  },
+  {
+    title: "Ready-to-run Ads",
+    desc: "Facebook and Instagram ad copy with hooks and CTAs — paste straight into your ad manager.",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 11l18-5v12L3 14v-3z" /><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+      </svg>
+    ),
+  },
+];
 
 export default function App() {
   const [productName, setProductName] = useState("");
@@ -128,23 +157,23 @@ export default function App() {
 
       {/* Nav */}
       <nav style={{ background: "#fff", borderBottom: `1px solid ${C.border}`, padding: "0 24px" }}>
-        <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 68 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
             <Logo />
-            <span style={{ fontWeight: 700, fontSize: 17, letterSpacing: "-0.02em" }}>ShopCopy</span>
+            <span style={{ fontWeight: 800, fontSize: 21, letterSpacing: "-0.02em" }}>ShopCopy</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <span style={{ fontSize: 13, color: C.textMuted, fontWeight: 500 }}>
               {remaining} free generation{remaining !== 1 ? "s" : ""} left
             </span>
-            <button style={{ padding: "8px 18px", background: C.text, color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+            <button style={{ padding: "9px 20px", background: C.text, color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
               Upgrade
             </button>
           </div>
         </div>
       </nav>
 
-      <main style={{ maxWidth: 720, margin: "0 auto", padding: "56px 20px 80px" }}>
+      <main style={{ maxWidth: 1080, margin: "0 auto", padding: "56px 20px 80px" }}>
 
         {/* Hero */}
         <div style={{ textAlign: "center", marginBottom: 44 }}>
@@ -152,7 +181,7 @@ export default function App() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
             Built for Shopify stores
           </div>
-          <h1 style={{ fontSize: "clamp(30px, 5vw, 46px)", fontWeight: 800, lineHeight: 1.1, margin: "0 0 14px", letterSpacing: "-0.03em" }}>
+          <h1 style={{ fontSize: "clamp(32px, 5vw, 50px)", fontWeight: 800, lineHeight: 1.1, margin: "0 0 14px", letterSpacing: "-0.03em" }}>
             Product copy that sells.<br />
             <span style={{ color: C.green }}>Written in seconds.</span>
           </h1>
@@ -162,7 +191,7 @@ export default function App() {
         </div>
 
         {/* Input Card */}
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "28px", marginBottom: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04)" }}>
+        <div style={{ maxWidth: 680, margin: "0 auto 24px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "28px", boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04)" }}>
           <div style={{ marginBottom: 18 }}>
             <label style={{ display: "block", fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 7 }}>
               Product name <span style={{ color: C.red }}>*</span>
@@ -201,7 +230,7 @@ export default function App() {
 
         {/* Results */}
         {results && (
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04)" }}>
+          <div style={{ maxWidth: 680, margin: "0 auto 24px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04)" }}>
             <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, background: "#fafaf9" }}>
               {sectionTabs.map((tab) => (
                 <button key={tab.key} onClick={() => setActiveSection(tab.key)}
@@ -267,8 +296,8 @@ export default function App() {
 
         {/* Upgrade CTA */}
         {usageCount >= FREE_LIMIT && (
-          <div style={{ marginTop: 24, background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 32, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-            <Logo size={36} />
+          <div style={{ maxWidth: 680, margin: "0 auto 24px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 32, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+            <Logo size={38} />
             <h3 style={{ margin: "14px 0 8px", fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em" }}>You've used your free generations</h3>
             <p style={{ color: C.textSoft, fontSize: 15, margin: "0 0 22px" }}>Get unlimited generations for your whole store.</p>
             <button style={{ padding: "13px 32px", background: C.green, border: "none", borderRadius: 10, color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 1px 2px rgba(22,163,74,0.3)" }}>
@@ -278,8 +307,29 @@ export default function App() {
           </div>
         )}
 
+        {/* Feature Cards */}
+        <div style={{ marginTop: 56 }}>
+          <h2 style={{ textAlign: "center", fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 10px" }}>
+            Everything your store needs
+          </h2>
+          <p style={{ textAlign: "center", color: C.textSoft, fontSize: 15, margin: "0 0 36px" }}>
+            One product input. Three types of high-converting content.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+            {FEATURES.map((f) => (
+              <div key={f.title} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "26px 24px", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: C.greenSoft, border: `1px solid ${C.greenBorder}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                  {f.icon}
+                </div>
+                <h3 style={{ fontSize: 17, fontWeight: 700, margin: "0 0 8px", letterSpacing: "-0.01em" }}>{f.title}</h3>
+                <p style={{ color: C.textSoft, fontSize: 14.5, lineHeight: 1.65, margin: 0 }}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Footer */}
-        <footer style={{ textAlign: "center", marginTop: 56, color: C.textMuted, fontSize: 13 }}>
+        <footer style={{ textAlign: "center", marginTop: 64, color: C.textMuted, fontSize: 13 }}>
           <p style={{ margin: 0 }}>© 2026 ShopCopy · Not affiliated with Shopify Inc.</p>
         </footer>
       </main>
