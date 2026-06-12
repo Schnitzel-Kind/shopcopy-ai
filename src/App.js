@@ -326,7 +326,7 @@ export default function App() {
           </button>
 
           <p style={{ textAlign: "center", fontSize: 13, color: C.textMuted, margin: "14px 0 0" }}>
-            No credit card required · Results in ~10 seconds
+            Free to try · Results in ~10 seconds
           </p>
         </div>
 
