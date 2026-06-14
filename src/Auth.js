@@ -22,6 +22,7 @@ export default function Auth({ onBack }) {
   const [mode, setMode] = useState("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -29,14 +30,19 @@ export default function Auth({ onBack }) {
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) { setError("Please enter email and password."); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    if (mode === "signup" && password !== confirmPassword) { setError("Passwords don't match."); return; }
     setLoading(true); setError(""); setMessage("");
 
     try {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        setMessage("Account created! You can now log in.");
-        setMode("login");
+        // Try to log in immediately (works when email confirmation is off)
+        const { error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
+        if (loginErr) {
+          setMessage("Account created! You can now log in.");
+          setMode("login");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -80,6 +86,16 @@ export default function Auth({ onBack }) {
             onFocus={(e) => { e.target.style.borderColor = C.borderFocus; e.target.style.boxShadow = `0 0 0 3px ${C.greenSoft}`; }}
             onBlur={(e) => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }} />
 
+          {mode === "signup" && (
+            <>
+              <label style={{ display: "block", fontSize: 14, fontWeight: 600, marginBottom: 7 }}>Confirm password</label>
+              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter your password"
+                style={inputStyle}
+                onFocus={(e) => { e.target.style.borderColor = C.borderFocus; e.target.style.boxShadow = `0 0 0 3px ${C.greenSoft}`; }}
+                onBlur={(e) => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }} />
+            </>
+          )}
+
           {error && <div style={{ background: C.redSoft, border: `1px solid ${C.redBorder}`, borderRadius: 10, padding: "10px 14px", color: C.red, fontSize: 14, marginBottom: 14 }}>{error}</div>}
           {message && <div style={{ background: C.greenSoft, border: `1px solid ${C.greenBorder}`, borderRadius: 10, padding: "10px 14px", color: C.greenDark, fontSize: 14, marginBottom: 14 }}>{message}</div>}
 
@@ -90,7 +106,7 @@ export default function Auth({ onBack }) {
 
           <p style={{ textAlign: "center", fontSize: 14, color: C.textSoft, margin: 0 }}>
             {mode === "signup" ? "Already have an account? " : "Don't have an account? "}
-            <button onClick={() => { setMode(mode === "signup" ? "login" : "signup"); setError(""); setMessage(""); }}
+            <button onClick={() => { setMode(mode === "signup" ? "login" : "signup"); setError(""); setMessage(""); setConfirmPassword(""); }}
               style={{ background: "none", border: "none", color: C.green, fontWeight: 600, cursor: "pointer", fontSize: 14, padding: 0 }}>
               {mode === "signup" ? "Log in" : "Sign up"}
             </button>

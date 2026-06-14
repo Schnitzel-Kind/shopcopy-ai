@@ -10,6 +10,8 @@ const C = {
   red: "#dc2626", redSoft: "#fef2f2", redBorder: "#fecaca",
 };
 
+const PRO_MONTHLY = 200;
+
 const BRAND_VOICE_OPTIONS = [
   { id: "professional", label: "Professional & Trustworthy", desc: "Credible, competent, reassuring" },
   { id: "friendly", label: "Friendly & Casual", desc: "Warm, personal, approachable" },
@@ -90,11 +92,15 @@ export default function App() {
   const [showAuth, setShowAuth] = useState(false);
   const [session, setSession] = useState(null);
   const [isPro, setIsPro] = useState(false);
+  const [usageCount, setUsageCount] = useState(0);
+  const [usageMonth, setUsageMonth] = useState(null);
   const [limitReached, setLimitReached] = useState(false);
   const [brandVoice, setBrandVoice] = useState("");
   const [voiceSaved, setVoiceSaved] = useState(false);
   const [showVoicePanel, setShowVoicePanel] = useState(false);
   const fileInputRef = useRef(null);
+
+  const thisMonth = () => new Date().toISOString().slice(0, 7);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -104,14 +110,19 @@ export default function App() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (!session?.user) { setIsPro(false); setBrandVoice(""); return; }
-    supabase.from("profiles").select("is_pro, brand_voice").eq("id", session.user.id).single()
+  const loadProfile = () => {
+    if (!session?.user) { setIsPro(false); setBrandVoice(""); setUsageCount(0); return; }
+    supabase.from("profiles").select("is_pro, brand_voice, usage_count, usage_month").eq("id", session.user.id).single()
       .then(({ data }) => {
         setIsPro(!!data?.is_pro);
         setBrandVoice(data?.brand_voice || "");
+        setUsageMonth(data?.usage_month || null);
+        // only count usage if it's the current month
+        setUsageCount(data?.usage_month === thisMonth() ? (data?.usage_count || 0) : 0);
       });
-  }, [session]);
+  };
+
+  useEffect(() => { loadProfile(); /* eslint-disable-next-line */ }, [session]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -165,6 +176,8 @@ export default function App() {
       const data = await response.json();
       setResults(data);
       setActiveSection("product");
+      // refresh usage display for Pro users
+      if (isPro) loadProfile();
     } catch (e) {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -193,6 +206,7 @@ export default function App() {
   if (showAuth) return <Auth onBack={() => setShowAuth(false)} />;
 
   const selectedVoiceLabel = BRAND_VOICE_OPTIONS.find(v => v.id === brandVoice)?.label;
+  const remaining = Math.max(0, PRO_MONTHLY - usageCount);
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif" }}>
@@ -206,7 +220,11 @@ export default function App() {
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginLeft: "auto" }}>
             {session ? (
               <>
-                {isPro && <span style={{ fontSize: 12, fontWeight: 700, color: C.greenDark, background: C.greenSoft, border: `1px solid ${C.greenBorder}`, padding: "4px 10px", borderRadius: 100 }}>PRO</span>}
+                {isPro ? (
+                  <span style={{ fontSize: 12, fontWeight: 700, color: C.greenDark, background: C.greenSoft, border: `1px solid ${C.greenBorder}`, padding: "4px 10px", borderRadius: 100 }}>PRO</span>
+                ) : (
+                  <button onClick={() => setShowAuth(true)} style={{ padding: "9px 20px", background: C.green, color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>Upgrade to Pro</button>
+                )}
                 <button onClick={handleLogout} style={{ padding: "9px 18px", background: "#fff", color: C.text, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Log out</button>
               </>
             ) : (
@@ -319,7 +337,7 @@ export default function App() {
             {loading ? "Generating your content..." : "Generate all content"}
           </button>
           <p style={{ textAlign: "center", fontSize: 13, color: C.textMuted, margin: "14px 0 0" }}>
-            {isPro ? "Pro — 200 generations per month" : "Free to try · Results in ~10 seconds"}
+            {isPro ? `Pro — ${remaining} of ${PRO_MONTHLY} generations left this month` : "Free to try · Results in ~10 seconds"}
           </p>
         </div>
 
