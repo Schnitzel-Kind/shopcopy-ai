@@ -85,36 +85,22 @@ export default async function handler(req, res) {
       }
     }
 
-    const { data: g } = await supabase
-      .from("global_usage")
-      .select("weighted_count")
-      .eq("day", day)
-      .maybeSingle();
-    const globalCount = g?.weighted_count || 0;
-    if (globalCount + weight > GLOBAL_FREE_DAILY) {
+    const { data: globalCount, error: gErr } = await supabase
+      .rpc("bump_global_usage", { p_day: day, p_weight: weight });
+    if (gErr) return res.status(500).json({ error: "Usage check failed." });
+
+    if (globalCount > GLOBAL_FREE_DAILY) {
       return res.status(429).json({ error: "Our free tier is at capacity for today. Please try again tomorrow or upgrade to Pro." });
     }
 
     const ip = getClientIp(req);
-    const { data: ipRow } = await supabase
-      .from("ip_usage")
-      .select("count")
-      .eq("ip", ip)
-      .eq("day", day)
-      .maybeSingle();
-    const ipCount = ipRow?.count || 0;
-    if (ipCount + weight > FREE_IP_DAILY) {
+    const { data: ipCount, error: ipErr } = await supabase
+      .rpc("bump_ip_usage", { p_ip: ip, p_day: day, p_weight: weight });
+    if (ipErr) return res.status(500).json({ error: "Usage check failed." });
+
+    if (ipCount > FREE_IP_DAILY) {
       return res.status(429).json({ error: "You've used your free generations for today. Upgrade to Pro for more." });
     }
-
-    await supabase.from("ip_usage").upsert(
-      { ip, day, count: ipCount + weight },
-      { onConflict: "ip,day" }
-    );
-    await supabase.from("global_usage").upsert(
-      { day, weighted_count: globalCount + weight },
-      { onConflict: "day" }
-    );
 
     return await callAnthropic(req, res);
   } catch (err) {
