@@ -95,11 +95,14 @@ export default async function handler(req, res) {
 
     if (user) {
       const { data: profile, error: pErr } = await supabase
-        .from("profiles").select("is_pro, usage_count, usage_month, brand_voice")
+        .from("profiles").select("is_pro, usage_count, usage_month, brand_voice, pro_until")
         .eq("id", user.id).single();
       if (pErr) return res.status(500).json({ error: "Could not load profile." });
 
-      if (profile.is_pro) {
+      const proStillValid = profile.is_pro &&
+        profile.pro_until && new Date(profile.pro_until) > new Date();
+
+      if (proStillValid) {
         isProUser = true;
         if (profile.brand_voice && BRAND_VOICES[profile.brand_voice]) {
           brandVoice = BRAND_VOICES[profile.brand_voice];
