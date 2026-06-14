@@ -3,25 +3,6 @@ import Legal from "./Legal";
 import Auth from "./Auth";
 import { supabase } from "./supabaseClient";
 
-const PROMPTS = {
-  product: `You are an expert Shopify SEO copywriter. If a product image is provided, use visual details (colors, materials, style) in your copy. Respond ONLY with a valid JSON object, no markdown, no backticks:
-{"metaTitle":"...","metaDescription":"...","productDescription":"...","blogPost":"..."}
-Rules:
-- metaTitle: max 60 chars
-- metaDescription: max 155 chars, include CTA
-- productDescription: 3-4 sentences, benefit-focused
-- blogPost: 200-250 words, SEO-friendly, include **Headings**`,
-  faq: `You are a Shopify product expert. If a product image is provided, use visual details to make FAQs more specific. Respond ONLY with a valid JSON object, no markdown, no backticks:
-{"faqs":[{"question":"...","answer":"..."},{"question":"...","answer":"..."},{"question":"...","answer":"..."},{"question":"...","answer":"..."},{"question":"...","answer":"..."}]}
-Generate 5 realistic customer FAQs with helpful answers.`,
-  adcopy: `You are an expert paid social media copywriter. If a product image is provided, reference its visual appeal. Respond ONLY with a valid JSON object, no markdown, no backticks:
-{"facebook":"...","instagram":"...","tiktok":"..."}
-Rules:
-- facebook: 2-3 sentences, hook + benefit + CTA, max 200 chars
-- instagram: punchy, emoji-friendly, max 150 chars, strong CTA
-- tiktok: casual Gen-Z tone, scroll-stopping hook first, conversational, max 150 chars, feels native not like an ad`,
-};
-
 const C = {
   bg: "#fafaf9", card: "#ffffff", border: "#e7e5e4", borderFocus: "#16a34a",
   text: "#1c1917", textSoft: "#57534e", textMuted: "#a8a29e",
@@ -103,17 +84,14 @@ export default function App() {
   const [limitReached, setLimitReached] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Track login session
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s);
-      setShowAuth(false);
+      setSession(s); setShowAuth(false);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Load Pro status when logged in
   useEffect(() => {
     if (!session?.user) { setIsPro(false); return; }
     supabase.from("profiles").select("is_pro").eq("id", session.user.id).single()
@@ -138,56 +116,33 @@ export default function App() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const callAPI = async (tool) => {
-    const userContent = imageData
-      ? [
-          { type: "image", source: { type: "base64", media_type: "image/jpeg", data: imageData } },
-          { type: "text", text: `Product Name: ${productName}\nDetails: ${productDetails || "See image for details."}` },
-        ]
-      : `Product Name: ${productName}\nDetails: ${productDetails || "No additional details provided."}`;
+  const handleGenerate = async () => {
+    if (!productName.trim()) { setError("Please enter a product name."); return; }
+    setLoading(true); setError(""); setResults(null); setLimitReached(false);
 
     const headers = { "Content-Type": "application/json" };
     if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
 
-    const response = await fetch("/api/generate", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        model: "claude-sonnet-4-5-20250929",
-        max_tokens: 1000,
-        system: PROMPTS[tool],
-        messages: [{ role: "user", content: userContent }],
-      }),
-    });
-
-    if (response.status === 429) {
-      const data = await response.json();
-      const err = new Error(data.error || "Limit reached.");
-      err.isLimit = true;
-      throw err;
-    }
-    if (!response.ok) throw new Error("Something went wrong. Please try again.");
-
-    const data = await response.json();
-    const text = data.content?.map((i) => i.text || "").join("") || "";
-    const clean = text.replace(/```json|```/g, "").trim();
-    return JSON.parse(clean);
-  };
-
-  const handleGenerate = async () => {
-    if (!productName.trim()) { setError("Please enter a product name."); return; }
-    setLoading(true); setError(""); setResults(null); setLimitReached(false);
     try {
-      const [product, faq, adcopy] = await Promise.all([callAPI("product"), callAPI("faq"), callAPI("adcopy")]);
-      setResults({ product, faq, adcopy });
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ productName, productDetails, imageData }),
+      });
+
+      if (response.status === 429) {
+        const data = await response.json();
+        setError(data.error || "Limit reached.");
+        setLimitReached(true);
+        return;
+      }
+      if (!response.ok) throw new Error("failed");
+
+      const data = await response.json();
+      setResults(data);
       setActiveSection("product");
     } catch (e) {
-      if (e.isLimit) {
-        setError(e.message);
-        setLimitReached(true);
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
