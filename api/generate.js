@@ -29,6 +29,15 @@ Rules:
 - tiktok: casual Gen-Z tone, scroll-stopping hook first, conversational, max 150 chars, feels native not like an ad`,
 };
 
+const BRAND_VOICES = {
+  professional: "Write in a professional, trustworthy and competent tone. Sound credible and reassuring. Avoid slang and excessive excitement.",
+  friendly: "Write in a friendly, warm and casual tone. Address the customer directly and personally, like a helpful friend.",
+  bold: "Write in a bold, energetic and motivating tone. Use strong, punchy language and create excitement and urgency.",
+  luxury: "Write in an elegant, premium and sophisticated tone. Emphasise quality, exclusivity and craftsmanship. Refined word choice.",
+  playful: "Write in a playful, fun and humorous tone. Light-hearted, witty, emoji-friendly where it fits naturally.",
+  minimal: "Write in a minimal, clean and concise tone. Short sentences, no fluff, no exaggeration. Calm and clear.",
+};
+
 function getClientIp(req) {
   const fwd = req.headers["x-forwarded-for"];
   if (fwd) return fwd.split(",")[0].trim();
@@ -82,15 +91,19 @@ export default async function handler(req, res) {
 
   try {
     let isProUser = false;
+    let brandVoice = null;
 
     if (user) {
       const { data: profile, error: pErr } = await supabase
-        .from("profiles").select("is_pro, usage_count, usage_month")
+        .from("profiles").select("is_pro, usage_count, usage_month, brand_voice")
         .eq("id", user.id).single();
       if (pErr) return res.status(500).json({ error: "Could not load profile." });
 
       if (profile.is_pro) {
         isProUser = true;
+        if (profile.brand_voice && BRAND_VOICES[profile.brand_voice]) {
+          brandVoice = BRAND_VOICES[profile.brand_voice];
+        }
         let used = profile.usage_count || 0;
         if (profile.usage_month !== month) used = 0;
         if (used + weight > PRO_MONTHLY) {
@@ -119,6 +132,8 @@ export default async function handler(req, res) {
       }
     }
 
+    const voiceSuffix = brandVoice ? `\n\nBRAND VOICE — apply this style to everything you write: ${brandVoice}` : "";
+
     const userContent = imageData
       ? [
           { type: "image", source: { type: "base64", media_type: "image/jpeg", data: imageData } },
@@ -127,9 +142,9 @@ export default async function handler(req, res) {
       : `Product Name: ${productName}\nDetails: ${productDetails || "No additional details provided."}`;
 
     const [product, faq, adcopy] = await Promise.all([
-      askClaude(PROMPTS.product, userContent),
-      askClaude(PROMPTS.faq, userContent),
-      askClaude(PROMPTS.adcopy, userContent),
+      askClaude(PROMPTS.product + voiceSuffix, userContent),
+      askClaude(PROMPTS.faq + voiceSuffix, userContent),
+      askClaude(PROMPTS.adcopy + voiceSuffix, userContent),
     ]);
 
     return res.status(200).json({ product, faq, adcopy });

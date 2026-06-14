@@ -10,6 +10,15 @@ const C = {
   red: "#dc2626", redSoft: "#fef2f2", redBorder: "#fecaca",
 };
 
+const BRAND_VOICE_OPTIONS = [
+  { id: "professional", label: "Professional & Trustworthy", desc: "Credible, competent, reassuring" },
+  { id: "friendly", label: "Friendly & Casual", desc: "Warm, personal, approachable" },
+  { id: "bold", label: "Bold & Energetic", desc: "Punchy, motivating, exciting" },
+  { id: "luxury", label: "Luxury & Premium", desc: "Elegant, refined, exclusive" },
+  { id: "playful", label: "Playful & Fun", desc: "Witty, light-hearted, emoji-friendly" },
+  { id: "minimal", label: "Minimal & Clean", desc: "Short, calm, no fluff" },
+];
+
 function Logo({ size = 30 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 36 36" fill="none">
@@ -82,6 +91,9 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [isPro, setIsPro] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
+  const [brandVoice, setBrandVoice] = useState("");
+  const [voiceSaved, setVoiceSaved] = useState(false);
+  const [showVoicePanel, setShowVoicePanel] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -93,9 +105,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!session?.user) { setIsPro(false); return; }
-    supabase.from("profiles").select("is_pro").eq("id", session.user.id).single()
-      .then(({ data }) => setIsPro(!!data?.is_pro));
+    if (!session?.user) { setIsPro(false); setBrandVoice(""); return; }
+    supabase.from("profiles").select("is_pro, brand_voice").eq("id", session.user.id).single()
+      .then(({ data }) => {
+        setIsPro(!!data?.is_pro);
+        setBrandVoice(data?.brand_voice || "");
+      });
   }, [session]);
 
   const handleImageUpload = async (e) => {
@@ -114,6 +129,15 @@ export default function App() {
   const removeImage = () => {
     setImageData(null); setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const saveBrandVoice = async (voiceId) => {
+    setBrandVoice(voiceId);
+    setVoiceSaved(false);
+    if (!session?.user) return;
+    await supabase.from("profiles").update({ brand_voice: voiceId || null }).eq("id", session.user.id);
+    setVoiceSaved(true);
+    setTimeout(() => setVoiceSaved(false), 2000);
   };
 
   const handleGenerate = async () => {
@@ -168,6 +192,8 @@ export default function App() {
   if (legalPage) return <Legal page={legalPage} onBack={() => setLegalPage(null)} />;
   if (showAuth) return <Auth onBack={() => setShowAuth(false)} />;
 
+  const selectedVoiceLabel = BRAND_VOICE_OPTIONS.find(v => v.id === brandVoice)?.label;
+
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif" }}>
 
@@ -207,6 +233,48 @@ export default function App() {
             Enter your product once — get SEO meta tags, descriptions, FAQs and ready-to-run ads. All at once.
           </p>
         </div>
+
+        {isPro && (
+          <div style={{ maxWidth: 680, margin: "0 auto 16px" }}>
+            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
+              <button onClick={() => setShowVoicePanel(!showVoicePanel)}
+                style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: C.greenDark, background: C.greenSoft, border: `1px solid ${C.greenBorder}`, padding: "3px 9px", borderRadius: 100 }}>PRO</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: C.text }}>Brand Voice</span>
+                  {selectedVoiceLabel && <span style={{ fontSize: 13, color: C.textMuted }}>· {selectedVoiceLabel}</span>}
+                </div>
+                <span style={{ fontSize: 13, color: C.textSoft, fontWeight: 600 }}>{showVoicePanel ? "Hide" : "Set up"}</span>
+              </button>
+
+              {showVoicePanel && (
+                <div style={{ padding: "4px 20px 20px" }}>
+                  <p style={{ fontSize: 14, color: C.textSoft, margin: "0 0 16px", lineHeight: 1.5 }}>
+                    Choose a tone of voice. Every piece of content will be written in this style.
+                  </p>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
+                    {BRAND_VOICE_OPTIONS.map((v) => (
+                      <button key={v.id} onClick={() => saveBrandVoice(v.id)}
+                        style={{ textAlign: "left", padding: "13px 14px", background: brandVoice === v.id ? C.greenSoft : "#fff", border: `1.5px solid ${brandVoice === v.id ? C.green : C.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "inherit" }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 3 }}>{v.label}</div>
+                        <div style={{ fontSize: 12.5, color: C.textSoft }}>{v.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 14 }}>
+                    {brandVoice && (
+                      <button onClick={() => saveBrandVoice("")}
+                        style={{ background: "none", border: "none", color: C.textMuted, fontSize: 13, cursor: "pointer", fontWeight: 600, padding: 0 }}>
+                        Clear (use default)
+                      </button>
+                    )}
+                    {voiceSaved && <span style={{ fontSize: 13, color: C.greenDark, fontWeight: 600 }}>Saved ✓</span>}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div style={{ maxWidth: 680, margin: "0 auto 24px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "28px", boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04)" }}>
           <div style={{ marginBottom: 18 }}>
@@ -316,7 +384,7 @@ export default function App() {
           <div style={{ maxWidth: 680, margin: "0 auto 24px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 32, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
             <Logo size={38} />
             <h3 style={{ margin: "14px 0 8px", fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em" }}>Want more generations?</h3>
-            <p style={{ color: C.textSoft, fontSize: 15, margin: "0 0 22px" }}>Upgrade to Pro for 200 generations per month for your whole store.</p>
+            <p style={{ color: C.textSoft, fontSize: 15, margin: "0 0 22px" }}>Upgrade to Pro for 200 generations per month — plus Brand Voice for your whole store.</p>
             <button onClick={() => setShowAuth(true)} style={{ padding: "13px 32px", background: C.green, border: "none", borderRadius: 10, color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 1px 2px rgba(22,163,74,0.3)" }}>
               Upgrade to Pro — $29/mo
             </button>
