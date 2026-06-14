@@ -93,11 +93,11 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [isPro, setIsPro] = useState(false);
   const [usageCount, setUsageCount] = useState(0);
-  
   const [limitReached, setLimitReached] = useState(false);
   const [brandVoice, setBrandVoice] = useState("");
   const [voiceSaved, setVoiceSaved] = useState(false);
   const [showVoicePanel, setShowVoicePanel] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
   const fileInputRef = useRef(null);
 
   const thisMonth = () => new Date().toISOString().slice(0, 7);
@@ -116,13 +116,11 @@ export default function App() {
       .then(({ data }) => {
         setIsPro(!!data?.is_pro);
         setBrandVoice(data?.brand_voice || "");
-        
-        // only count usage if it's the current month
         setUsageCount(data?.usage_month === thisMonth() ? (data?.usage_count || 0) : 0);
       });
   };
 
- // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadProfile(); }, [session]);
 
   const handleImageUpload = async (e) => {
@@ -152,6 +150,31 @@ export default function App() {
     setTimeout(() => setVoiceSaved(false), 2000);
   };
 
+  const startCheckout = async () => {
+    // Must be logged in to subscribe — send to auth first
+    if (!session?.access_token) { setShowAuth(true); return; }
+    setUpgrading(true);
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url; // go to Stripe checkout
+      } else {
+        setError(data.error || "Could not start checkout.");
+        setUpgrading(false);
+      }
+    } catch (e) {
+      setError("Could not start checkout. Please try again.");
+      setUpgrading(false);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!productName.trim()) { setError("Please enter a product name."); return; }
     setLoading(true); setError(""); setResults(null); setLimitReached(false);
@@ -177,7 +200,6 @@ export default function App() {
       const data = await response.json();
       setResults(data);
       setActiveSection("product");
-      // refresh usage display for Pro users
       if (isPro) loadProfile();
     } catch (e) {
       setError("Something went wrong. Please try again.");
@@ -224,14 +246,14 @@ export default function App() {
                 {isPro ? (
                   <span style={{ fontSize: 12, fontWeight: 700, color: C.greenDark, background: C.greenSoft, border: `1px solid ${C.greenBorder}`, padding: "4px 10px", borderRadius: 100 }}>PRO</span>
                 ) : (
-                  <button onClick={() => setShowAuth(true)} style={{ padding: "9px 20px", background: C.green, color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>Upgrade to Pro</button>
+                  <button onClick={startCheckout} disabled={upgrading} style={{ padding: "9px 20px", background: C.green, color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", flexShrink: 0, opacity: upgrading ? 0.7 : 1 }}>{upgrading ? "..." : "Upgrade to Pro"}</button>
                 )}
                 <button onClick={handleLogout} style={{ padding: "9px 18px", background: "#fff", color: C.text, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Log out</button>
               </>
             ) : (
               <>
                 <button onClick={() => setShowAuth(true)} style={{ background: "none", border: "none", color: C.text, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Log in</button>
-                <button onClick={() => setShowAuth(true)} style={{ padding: "9px 20px", background: C.text, color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>Upgrade</button>
+                <button onClick={startCheckout} style={{ padding: "9px 20px", background: C.text, color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>Upgrade</button>
               </>
             )}
           </div>
@@ -404,8 +426,8 @@ export default function App() {
             <Logo size={38} />
             <h3 style={{ margin: "14px 0 8px", fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em" }}>Want more generations?</h3>
             <p style={{ color: C.textSoft, fontSize: 15, margin: "0 0 22px" }}>Upgrade to Pro for 200 generations per month — plus Brand Voice for your whole store.</p>
-            <button onClick={() => setShowAuth(true)} style={{ padding: "13px 32px", background: C.green, border: "none", borderRadius: 10, color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 1px 2px rgba(22,163,74,0.3)" }}>
-              Upgrade to Pro — $29/mo
+            <button onClick={startCheckout} disabled={upgrading} style={{ padding: "13px 32px", background: C.green, border: "none", borderRadius: 10, color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 1px 2px rgba(22,163,74,0.3)", opacity: upgrading ? 0.7 : 1 }}>
+              {upgrading ? "..." : "Upgrade to Pro — $29/mo"}
             </button>
             <p style={{ fontSize: 13, color: C.textMuted, margin: "12px 0 0" }}>Cancel anytime</p>
           </div>
