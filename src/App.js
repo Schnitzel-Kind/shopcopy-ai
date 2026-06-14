@@ -93,7 +93,7 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [isPro, setIsPro] = useState(false);
   const [usageCount, setUsageCount] = useState(0);
-  const [usageMonth, setUsageMonth] = useState(null);
+  
   const [limitReached, setLimitReached] = useState(false);
   const [brandVoice, setBrandVoice] = useState("");
   const [voiceSaved, setVoiceSaved] = useState(false);
@@ -116,13 +116,14 @@ export default function App() {
       .then(({ data }) => {
         setIsPro(!!data?.is_pro);
         setBrandVoice(data?.brand_voice || "");
-        setUsageMonth(data?.usage_month || null);
+        
         // only count usage if it's the current month
         setUsageCount(data?.usage_month === thisMonth() ? (data?.usage_count || 0) : 0);
       });
   };
 
-  useEffect(() => { loadProfile(); /* eslint-disable-next-line */ }, [session]);
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadProfile(); }, [session]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
