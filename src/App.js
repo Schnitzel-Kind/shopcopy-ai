@@ -275,7 +275,7 @@ export default function App() {
           </p>
         </div>
 
-        {isPro && (
+        {isPro ? (
           <div style={{ maxWidth: 680, margin: "0 auto 16px" }}>
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
               <button onClick={() => setShowVoicePanel(!showVoicePanel)}
@@ -313,6 +313,36 @@ export default function App() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        ) : (
+          <div style={{ maxWidth: 680, margin: "0 auto 16px" }}>
+            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: C.greenDark, background: C.greenSoft, border: `1px solid ${C.greenBorder}`, padding: "3px 9px", borderRadius: 100 }}>PRO</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: C.text }}>Brand Voice</span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                </div>
+                <button onClick={startCheckout} disabled={upgrading} style={{ fontSize: 13, color: C.green, fontWeight: 700, background: "none", border: "none", cursor: "pointer", padding: 0 }}>{upgrading ? "..." : "Upgrade"}</button>
+              </div>
+              <div style={{ padding: "0 20px 20px", position: "relative" }}>
+                <p style={{ fontSize: 14, color: C.textSoft, margin: "0 0 16px", lineHeight: 1.5 }}>
+                  Set your store's tone of voice once — every piece of content is written to match. <strong style={{ color: C.text }}>Available on Pro.</strong>
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, opacity: 0.55, pointerEvents: "none", filter: "grayscale(0.4)" }}>
+                  {BRAND_VOICE_OPTIONS.map((v) => (
+                    <div key={v.id} style={{ textAlign: "left", padding: "13px 14px", background: "#fff", border: `1.5px solid ${C.border}`, borderRadius: 10 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 3 }}>{v.label}</div>
+                      <div style={{ fontSize: 12.5, color: C.textSoft }}>{v.desc}</div>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={startCheckout} disabled={upgrading}
+                  style={{ marginTop: 16, width: "100%", padding: "12px", background: C.green, border: "none", borderRadius: 10, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", opacity: upgrading ? 0.7 : 1 }}>
+                  {upgrading ? "..." : "Unlock Brand Voice with Pro"}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -425,7 +455,15 @@ export default function App() {
           <div style={{ maxWidth: 680, margin: "0 auto 24px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 32, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
             <Logo size={38} />
             <h3 style={{ margin: "14px 0 8px", fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em" }}>Want more generations?</h3>
-            <p style={{ color: C.textSoft, fontSize: 15, margin: "0 0 22px" }}>Upgrade to Pro for 200 generations per month — plus Brand Voice for your whole store.</p>
+            <p style={{ color: C.textSoft, fontSize: 15, margin: "0 0 20px" }}>Here's what you get with Pro:</p>
+            <div style={{ textAlign: "left", maxWidth: 320, margin: "0 auto 24px", display: "flex", flexDirection: "column", gap: 11 }}>
+              {["200 generations every month", "Brand Voice — your store's tone, applied everywhere", "All content types: SEO copy, FAQs & ads"].map((benefit) => (
+                <div key={benefit} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="11" fill={C.greenSoft} stroke={C.greenBorder} /><path d="M17 9l-5.5 6L8 12" stroke={C.greenDark} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  <span style={{ fontSize: 14.5, color: C.text, lineHeight: 1.5 }}>{benefit}</span>
+                </div>
+              ))}
+            </div>
             <button onClick={startCheckout} disabled={upgrading} style={{ padding: "13px 32px", background: C.green, border: "none", borderRadius: 10, color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 1px 2px rgba(22,163,74,0.3)", opacity: upgrading ? 0.7 : 1 }}>
               {upgrading ? "..." : "Upgrade to Pro — $29/mo"}
             </button>
