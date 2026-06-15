@@ -99,13 +99,43 @@ export default function App() {
   const [showVoicePanel, setShowVoicePanel] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
   const fileInputRef = useRef(null);
+  const pendingCheckoutRef = useRef(false);
 
   const thisMonth = () => new Date().toISOString().slice(0, 7);
+
+  // Calls the checkout endpoint with a given access token and redirects to Stripe
+  const runCheckout = async (accessToken) => {
+    setUpgrading(true);
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+        },
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error || "Could not start checkout.");
+        setUpgrading(false);
+      }
+    } catch (e) {
+      setError("Could not start checkout. Please try again.");
+      setUpgrading(false);
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s); setShowAuth(false);
+      // If the user clicked "Upgrade" before logging in, continue to checkout now
+      if (pendingCheckoutRef.current && s?.access_token) {
+        pendingCheckoutRef.current = false;
+        runCheckout(s.access_token);
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -151,28 +181,13 @@ export default function App() {
   };
 
   const startCheckout = async () => {
-    // Must be logged in to subscribe — send to auth first
-    if (!session?.access_token) { setShowAuth(true); return; }
-    setUpgrading(true);
-    try {
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`,
-        },
-      });
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url; // go to Stripe checkout
-      } else {
-        setError(data.error || "Could not start checkout.");
-        setUpgrading(false);
-      }
-    } catch (e) {
-      setError("Could not start checkout. Please try again.");
-      setUpgrading(false);
+    // Must be logged in to subscribe — remember intent and send to auth first
+    if (!session?.access_token) {
+      pendingCheckoutRef.current = true;
+      setShowAuth(true);
+      return;
     }
+    runCheckout(session.access_token);
   };
 
   const handleGenerate = async () => {
@@ -226,7 +241,7 @@ export default function App() {
   };
 
   if (legalPage) return <Legal page={legalPage} onBack={() => setLegalPage(null)} />;
-  if (showAuth) return <Auth onBack={() => setShowAuth(false)} />;
+  if (showAuth) return <Auth onBack={() => { pendingCheckoutRef.current = false; setShowAuth(false); }} />;
 
   const selectedVoiceLabel = BRAND_VOICE_OPTIONS.find(v => v.id === brandVoice)?.label;
   const remaining = Math.max(0, PRO_MONTHLY - usageCount);
