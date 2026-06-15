@@ -5,7 +5,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
-const FREE_IP_DAILY = 2;
+const FREE_IP_DAILY = 1;
 const GLOBAL_FREE_DAILY = 30;
 const PRO_MONTHLY = 200;
 const IMAGE_WEIGHT = 2;
@@ -99,6 +99,7 @@ export default async function handler(req, res) {
         .eq("id", user.id).single();
       if (pErr) return res.status(500).json({ error: "Could not load profile." });
 
+      // Pro is only valid if is_pro AND the subscription hasn't expired
       const proStillValid = profile.is_pro &&
         profile.pro_until && new Date(profile.pro_until) > new Date();
 

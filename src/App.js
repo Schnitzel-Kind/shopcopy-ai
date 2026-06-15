@@ -499,7 +499,7 @@ export default function App() {
                 <h3 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 4px" }}>Free</h3>
                 <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 18px" }}>$0<span style={{ fontSize: 15, fontWeight: 600, color: C.textMuted }}>/forever</span></div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-                  {["2 generations per day", "SEO copy, FAQs & ads", "Optional product photo"].map((b) => (
+                  {["1 generation per day", "SEO copy, FAQs & ads", "Optional product photo"].map((b) => (
                     <div key={b} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="11" fill="#f5f5f4" stroke={C.border} /><path d="M17 9l-5.5 6L8 12" stroke={C.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                       <span style={{ fontSize: 14.5, color: C.text, lineHeight: 1.5 }}>{b}</span>
