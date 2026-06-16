@@ -93,6 +93,7 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [isPro, setIsPro] = useState(false);
   const [usageCount, setUsageCount] = useState(0);
+  const [proUntil, setProUntil] = useState(null);
   const [limitReached, setLimitReached] = useState(false);
   const [brandVoice, setBrandVoice] = useState("");
   const [voiceSaved, setVoiceSaved] = useState(false);
@@ -141,12 +142,13 @@ export default function App() {
   }, []);
 
   const loadProfile = () => {
-    if (!session?.user) { setIsPro(false); setBrandVoice(""); setUsageCount(0); return; }
-    supabase.from("profiles").select("is_pro, brand_voice, usage_count, usage_month").eq("id", session.user.id).single()
+    if (!session?.user) { setIsPro(false); setBrandVoice(""); setUsageCount(0); setProUntil(null); return; }
+    supabase.from("profiles").select("is_pro, brand_voice, usage_count, usage_month, pro_until").eq("id", session.user.id).single()
       .then(({ data }) => {
         setIsPro(!!data?.is_pro);
         setBrandVoice(data?.brand_voice || "");
         setUsageCount(data?.usage_month === thisMonth() ? (data?.usage_count || 0) : 0);
+        setProUntil(data?.pro_until || null);
       });
   };
 
@@ -290,7 +292,42 @@ export default function App() {
           </p>
         </div>
 
-        {isPro ? (
+        {session && (
+          <div style={{ maxWidth: 680, margin: "0 auto 16px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: "18px 20px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: C.greenSoft, border: `1px solid ${C.greenBorder}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: C.greenDark }}>{(session.user?.email || "?").charAt(0).toUpperCase()}</span>
+                </div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{session.user?.email}</div>
+                  <div style={{ fontSize: 13, color: C.textMuted, marginTop: 1 }}>
+                    {isPro ? "Pro plan" : "Free plan"}
+                  </div>
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                {isPro ? (
+                  <>
+                    <div style={{ fontSize: 13, color: C.text, fontWeight: 600 }}>{Math.max(0, PRO_MONTHLY - usageCount)} of {PRO_MONTHLY} left</div>
+                    {proUntil && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>Renews {new Date(proUntil).toLocaleDateString()}</div>}
+                  </>
+                ) : (
+                  <button onClick={startCheckout} disabled={upgrading} style={{ padding: "8px 16px", background: C.green, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: upgrading ? 0.7 : 1 }}>
+                    {upgrading ? "..." : "Upgrade to Pro"}
+                  </button>
+                )}
+              </div>
+            </div>
+            {session.user && !(session.user.email_confirmed_at || session.user.confirmed_at) && (
+              <div style={{ marginTop: 14, padding: "10px 14px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, fontSize: 13, color: "#92400e", lineHeight: 1.5 }}>
+                Please confirm your email — we sent a link to your inbox. Everything works in the meantime.
+              </div>
+            )}
+          </div>
+        )}
+
+
           <div style={{ maxWidth: 680, margin: "0 auto 16px" }}>
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
               <button onClick={() => setShowVoicePanel(!showVoicePanel)}

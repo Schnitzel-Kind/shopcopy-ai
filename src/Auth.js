@@ -27,6 +27,8 @@ export default function Auth({ onBack }) {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [signupEmail, setSignupEmail] = useState(""); // set when signup needs email confirmation
+  const [resent, setResent] = useState(false);
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) { setError("Please enter email and password."); return; }
@@ -36,14 +38,13 @@ export default function Auth({ onBack }) {
 
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        // Try to log in immediately (works when email confirmation is off)
-        const { error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
-        if (loginErr) {
-          setMessage("Account created! You can now log in.");
-          setMode("login");
+        // If Supabase returns a user but no active session, email confirmation is required
+        if (data?.user && !data?.session) {
+          setSignupEmail(email);
         }
+        // If a session exists (confirmation off), App's auth listener picks it up automatically
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -55,11 +56,59 @@ export default function Auth({ onBack }) {
     }
   };
 
+  const resendConfirmation = async () => {
+    setResent(false); setError("");
+    try {
+      const { error } = await supabase.auth.resend({ type: "signup", email: signupEmail });
+      if (error) throw error;
+      setResent(true);
+    } catch (e) {
+      setError(e.message || "Could not resend. Try again in a moment.");
+    }
+  };
+
   const inputStyle = {
     width: "100%", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10,
     padding: "12px 14px", color: C.text, fontSize: 15, outline: "none", boxSizing: "border-box",
     fontFamily: "inherit", marginBottom: 14, transition: "border-color 0.15s, box-shadow 0.15s",
   };
+
+  // Confirmation screen — shown after signup when email verification is required
+  if (signupEmail) {
+    return (
+      <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+        <div style={{ width: "100%", maxWidth: 420, textAlign: "center" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 14, background: C.greenSoft, border: `1px solid ${C.greenBorder}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+          </div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 10px", letterSpacing: "-0.02em" }}>Check your inbox</h1>
+          <p style={{ color: C.textSoft, fontSize: 15, lineHeight: 1.6, margin: "0 0 8px" }}>
+            We sent a confirmation link to
+          </p>
+          <p style={{ color: C.text, fontSize: 15, fontWeight: 700, margin: "0 0 20px" }}>{signupEmail}</p>
+          <p style={{ color: C.textSoft, fontSize: 14, lineHeight: 1.6, margin: "0 0 24px" }}>
+            Click the link in that email to confirm your account. Can't find it? Check your spam folder.
+          </p>
+
+          {error && <div style={{ background: C.redSoft, border: `1px solid ${C.redBorder}`, borderRadius: 10, padding: "10px 14px", color: C.red, fontSize: 14, marginBottom: 14 }}>{error}</div>}
+          {resent && <div style={{ background: C.greenSoft, border: `1px solid ${C.greenBorder}`, borderRadius: 10, padding: "10px 14px", color: C.greenDark, fontSize: 14, marginBottom: 14 }}>Confirmation email sent again.</div>}
+
+          <button onClick={resendConfirmation}
+            style={{ width: "100%", padding: "13px", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 12 }}>
+            Resend confirmation email
+          </button>
+          <button onClick={() => { setSignupEmail(""); setMode("login"); setError(""); setResent(false); }}
+            style={{ width: "100%", padding: "13px", background: C.green, border: "none", borderRadius: 10, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 16 }}>
+            I've confirmed — go to log in
+          </button>
+
+          <button onClick={onBack} style={{ background: "none", border: "none", color: C.textMuted, fontSize: 14, cursor: "pointer", fontWeight: 500 }}>
+            Back to ShopCopy
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px" }}>
