@@ -355,7 +355,7 @@ export default function App() {
           </div>
         )}
 
-
+        {isPro ? (
           <div style={{ maxWidth: 680, margin: "0 auto 16px" }}>
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
               <button onClick={() => setShowVoicePanel(!showVoicePanel)}
