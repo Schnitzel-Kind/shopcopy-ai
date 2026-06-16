@@ -128,6 +128,31 @@ export default function App() {
     }
   };
 
+  const [portalLoading, setPortalLoading] = useState(false);
+  const openPortal = async () => {
+    if (!session?.access_token) return;
+    setPortalLoading(true);
+    try {
+      const response = await fetch("/api/portal", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error || "Could not open subscription management.");
+        setPortalLoading(false);
+      }
+    } catch (e) {
+      setError("Could not open subscription management. Please try again.");
+      setPortalLoading(false);
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
@@ -311,6 +336,9 @@ export default function App() {
                   <>
                     <div style={{ fontSize: 13, color: C.text, fontWeight: 600 }}>{Math.max(0, PRO_MONTHLY - usageCount)} of {PRO_MONTHLY} left</div>
                     {proUntil && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>Renews {new Date(proUntil).toLocaleDateString()}</div>}
+                    <button onClick={openPortal} disabled={portalLoading} style={{ marginTop: 6, background: "none", border: "none", color: C.textSoft, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+                      {portalLoading ? "..." : "Manage subscription"}
+                    </button>
                   </>
                 ) : (
                   <button onClick={startCheckout} disabled={upgrading} style={{ padding: "8px 16px", background: C.green, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: upgrading ? 0.7 : 1 }}>
@@ -326,8 +354,6 @@ export default function App() {
             )}
           </div>
         )}
-
-        {isPro ? (
 
 
           <div style={{ maxWidth: 680, margin: "0 auto 16px" }}>
