@@ -100,9 +100,14 @@ export default function App() {
   const [showVoicePanel, setShowVoicePanel] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
   const fileInputRef = useRef(null);
-  const pendingCheckoutRef = useRef(false);
-
   const thisMonth = () => new Date().toISOString().slice(0, 7);
+
+  // Pending-checkout intent is stored in localStorage so it survives the page
+  // reload that happens when the user clicks the email-confirmation link.
+  const PENDING_KEY = "shopcopy_pending_checkout";
+  const setPendingCheckout = () => { try { localStorage.setItem(PENDING_KEY, "1"); } catch (e) {} };
+  const clearPendingCheckout = () => { try { localStorage.removeItem(PENDING_KEY); } catch (e) {} };
+  const hasPendingCheckout = () => { try { return localStorage.getItem(PENDING_KEY) === "1"; } catch (e) { return false; } };
 
   // Calls the checkout endpoint with a given access token and redirects to Stripe
   const runCheckout = async (accessToken) => {
@@ -154,12 +159,20 @@ export default function App() {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      // After email-confirmation the page reloads with a fresh session —
+      // if an upgrade was pending, continue to checkout now.
+      if (data.session?.access_token && hasPendingCheckout()) {
+        clearPendingCheckout();
+        runCheckout(data.session.access_token);
+      }
+    });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s); setShowAuth(false);
       // If the user clicked "Upgrade" before logging in, continue to checkout now
-      if (pendingCheckoutRef.current && s?.access_token) {
-        pendingCheckoutRef.current = false;
+      if (s?.access_token && hasPendingCheckout()) {
+        clearPendingCheckout();
         runCheckout(s.access_token);
       }
     });
@@ -210,7 +223,7 @@ export default function App() {
   const startCheckout = async () => {
     // Must be logged in to subscribe — remember intent and send to auth first
     if (!session?.access_token) {
-      pendingCheckoutRef.current = true;
+      setPendingCheckout();
       setShowAuth(true);
       return;
     }
@@ -268,7 +281,7 @@ export default function App() {
   };
 
   if (legalPage) return <Legal page={legalPage} onBack={() => setLegalPage(null)} />;
-  if (showAuth) return <Auth onBack={() => { pendingCheckoutRef.current = false; setShowAuth(false); }} />;
+  if (showAuth) return <Auth onBack={() => { clearPendingCheckout(); setShowAuth(false); }} />;
 
   const selectedVoiceLabel = BRAND_VOICE_OPTIONS.find(v => v.id === brandVoice)?.label;
   const remaining = Math.max(0, PRO_MONTHLY - usageCount);
