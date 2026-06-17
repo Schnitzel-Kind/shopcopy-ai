@@ -360,11 +360,6 @@ export default function App() {
                 )}
               </div>
             </div>
-            {session.user && !(session.user.email_confirmed_at || session.user.confirmed_at) && (
-              <div style={{ marginTop: 14, padding: "10px 14px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, fontSize: 13, color: "#92400e", lineHeight: 1.5 }}>
-                Please confirm your email — we sent a link to your inbox. Everything works in the meantime.
-              </div>
-            )}
           </div>
         )}
 
