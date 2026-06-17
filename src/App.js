@@ -348,7 +348,6 @@ export default function App() {
                 {isPro ? (
                   <>
                     <div style={{ fontSize: 13, color: C.text, fontWeight: 600 }}>{Math.max(0, PRO_MONTHLY - usageCount)} of {PRO_MONTHLY} left</div>
-                    {proUntil && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>Renews {new Date(proUntil).toLocaleDateString()}</div>}
                     <button onClick={openPortal} disabled={portalLoading} style={{ marginTop: 6, background: "none", border: "none", color: C.textSoft, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0, textDecoration: "underline" }}>
                       {portalLoading ? "..." : "Manage subscription"}
                     </button>
