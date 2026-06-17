@@ -93,7 +93,6 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [isPro, setIsPro] = useState(false);
   const [usageCount, setUsageCount] = useState(0);
-  const [proUntil, setProUntil] = useState(null);
   const [limitReached, setLimitReached] = useState(false);
   const [brandVoice, setBrandVoice] = useState("");
   const [voiceSaved, setVoiceSaved] = useState(false);
@@ -180,13 +179,12 @@ export default function App() {
   }, []);
 
   const loadProfile = () => {
-    if (!session?.user) { setIsPro(false); setBrandVoice(""); setUsageCount(0); setProUntil(null); return; }
-    supabase.from("profiles").select("is_pro, brand_voice, usage_count, usage_month, pro_until").eq("id", session.user.id).single()
+    if (!session?.user) { setIsPro(false); setBrandVoice(""); setUsageCount(0); return; }
+    supabase.from("profiles").select("is_pro, brand_voice, usage_count, usage_month").eq("id", session.user.id).single()
       .then(({ data }) => {
         setIsPro(!!data?.is_pro);
         setBrandVoice(data?.brand_voice || "");
         setUsageCount(data?.usage_month === thisMonth() ? (data?.usage_count || 0) : 0);
-        setProUntil(data?.pro_until || null);
       });
   };
 
